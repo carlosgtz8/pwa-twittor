@@ -126,4 +126,75 @@ self.addEventListener('sync', e => {
     }
 
 
-})
+});
+
+// Escuchar PUSH
+
+self.addEventListener('push', e => {
+    // console.log(e.data.text());
+
+    const data = JSON.parse(e.data.text())
+
+    // console.log(data);
+
+    const titulo = data.titulo;
+    const options = {
+        body: data.cuerpo,
+        // icon: 'img/icons/icon-72x72.png',
+        icon: `img/avatars/${data.usuario}.jpg`,
+        badge: 'img/favicon.ico',
+        image: 'https://www.cinepremiere.com.mx/wp-content/uploads/2019/08/Stark-Tower.jpg',
+        vibrate: [500, 110, 500, 110, 450, 110, 200, 110, 170, 40, 450, 110, 200, 110, 170, 40, 500],
+        openUrl: '/',
+        data: {
+            url: '/'
+        },
+        actions: [
+            {
+                action: 'thor-action',
+                title: 'Thor',
+                icon: 'img/avatars/thor.jpg'
+            },
+            {
+                action: 'ironman-action',
+                title: 'Ironman',
+                icon: 'img/avatars/ironman.jpg'
+            }
+        ]
+    };
+
+    e.waitUntil(self.registration.showNotification(titulo, options));
+});
+
+// Sucede cuando se cierra la notificacion
+self.addEventListener('notificationclose', e => {
+    console.log('Notificacion cerrada', e);
+});
+
+// Cuando se hace click en la notifiacion
+self.addEventListener('notificationclick', e => {
+    const notificacion = e.notification;
+    const accion = e.action;
+
+    console.log({ notificacion, accion });
+
+    // Proceso para detectar si hay una pestaña abierta con la aplicacion
+    // Sino hay crear una nueva tab para abrir la aplicacion
+    const respuesta = clients.matchAll()
+        .then(clientes => {
+            let cliente = clientes.find(c => {
+                return c.visibilityState === 'visible'
+            });
+
+            if (cliente !== undefined) {
+                cliente.navigate(notificacion.data.url);
+                cliente.focus();
+            } else {
+                clients.openWindow(notificacion.data.url);
+            }
+
+            return notificacion.close();
+        });
+
+    e.waitUntil(respuesta);
+});
